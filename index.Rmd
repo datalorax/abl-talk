@@ -1,0 +1,623 @@
+---
+title: "Instructional Groupings "
+subtitle: "Recommendations for Solar System Middle School"
+author: "Daniel Anderson "
+date: "ABL Schools Interview"
+output:
+  xaringan::moon_reader:
+    css: ["default", "style.css"]
+    lib_dir: libs
+    nature:
+      navigation:
+        scroll: false
+      highlightLines: true
+      countIncrementalSlides: false
+      beforeInit: "https://platform.twitter.com/widgets.js"
+    includes:
+      in_header: "load-feather.html"
+---
+
+```{r include = FALSE, results = "asis"}
+source("slide-setup.R")
+knitr::opts_chunk$set(
+  message = FALSE,
+  warning = FALSE,
+  echo = FALSE,
+  fig.width = 9
+)
+options(knitr.kable.NA = '')
+
+library(lme4)
+library(esvis)
+library(ggridges)
+library(emmeans)
+library(tidyverse)
+theme_set(theme_minimal(25))
+update_geom_defaults('path', list(size = 3))
+update_geom_defaults('point', list(size = 4))
+
+files <- list.files(here::here("data"), full.names = TRUE)
+
+stu <- read_csv(files[grep("stu", files)])
+groups <- read_csv(files[grep("group", files)])
+scores <- read_csv(files[grep("score", files)])
+
+d <- left_join(stu, scores) %>% 
+  left_join(groups) %>% 
+  janitor::clean_names()
+
+```
+
+`r setup("index")`
+
+---
+# This talk
+
+Focus on 
+
+* Evidence
+  
+  + and conceptual discussions of methods used to gather evidence
+
+* Substantive findings
+
+* Practical takeaways
+
+* Other potential areas for future exploration
+
+---
+class: inverse-blue middle
+background-image: url(https://images.pexels.com/photos/590493/pexels-photo-590493.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2)
+background-size: cover
+
+# Quick background
+
+---
+# Instructional groups
+
+* SimGroup: Similar performance
+
+--
+
+* DivGroup: Diverse performance
+
+--
+
+* Random: Students groups randomly created
+
+--
+
+* Manual: Teachers create groupings
+
+---
+# Quizes
+
+* 10 quizzes administered, each one week apart
+
+* Instructional grouping changed for each quiz
+
+* Scored on a percent correct basis
+
+
+---
+class: inverse-blue
+
+# RQs
+
+> What groups of students, based on common attributes, are consistently underperforming on their quizzes?
+
+<br>
+
+> Are there any types of groups, e.g., manual groups vs calculated (SimGroup, DivGroup, Random), that you would recommend teachers use or avoid using?
+
+---
+# Primary takeaway
+
+Amongst instructional groups, scores in the **Manual** were clearly the lowest
+
+
+--
+Race differences were modest, and generally washed out when accounting for instructional grouping
+
+
+--
+Gender differences were also modest, and generally washed out when accounting for instructional group
+
+--
+
+  + Some evidence **Male** students scored reliably below **Female** students, on average
+
+
+--
+**DivGroup** was clearly the highest performing instructional group, and should be preferred over all others
+
+---
+class: inverse-red middle
+
+# Evidence
+
+---
+# Effect sizes
+
+Difference in means, divided by pooled standard deviation
+
+
+--
+Benefits
+
+* More comparabale across measures
+
+* More comparable across studies
+
+* Can help interpretation by comparing to historical trends
+
+<!-- Hedges & Nowell (1999) found narrowing of Black/White and Hispanic/White achievement gaps through 70's and 80's, stable through 90's. "Given the rate of change over the past 30 years… it would require more than 50 years to close the gap in mean reading achievement and a century or more to close the gap in mean mathematics and science achievement".  -->
+
+<!-- More recent research (Reardon et al., 1990) found effect sizes in the same range as the 99 publication. -->
+
+
+---
+# Effect sizes
+## Instructional Groups
+
+```{r }
+d %>% 
+  coh_d(score ~ group_type) %>% 
+  arrange(group_type_foc) %>% 
+  mutate(abs = abs(coh_d)) %>% 
+  distinct(abs, .keep_all = TRUE) %>% 
+  select(
+    `Focal Group` = group_type_foc,
+    `Reference Group` = group_type_ref,
+    d = coh_d
+  ) %>% 
+  knitr::kable(align = "lcc", digits = 2)
+```
+
+
+---
+# Effect sizes
+## Race
+
+```{r }
+race_coh_d <- d %>% 
+  coh_d(score ~ race) %>% 
+  arrange(race_foc) %>% 
+  mutate(abs = abs(coh_d)) %>% 
+  distinct(abs, .keep_all = TRUE) %>% 
+  select(
+    `Focal Group` = race_foc,
+    `Reference Group` = race_ref,
+    d = coh_d
+  )
+
+knitr::kable(race_coh_d, align = "lcc", digits = 2)
+```
+
+
+---
+class: inverse-red middle
+
+# Quick sidebar: "Gap" language
+
+---
+# Mean differences
+
+* In education, we often talk about "achievement gaps", implying mean differences
+
+
+--
+* There is [some evidence](https://journals.sagepub.com/doi/full/10.3102/0013189X19863765) that this puts greater onus on students, rather than systems
+
+
+--
+* These **average** differences may also lead teachers to [have lower expectations](https://pubmed.ncbi.nlm.nih.gov/19083359/) for specific groups of students
+
+
+--
+But **mean differences** imply little for an **individual** student.
+
+
+---
+# Variability in distributions
+
+```{r }
+ggplot(d, aes(score, race)) +
+  stat_density_ridges(
+    quantile_lines = TRUE,
+    quantile_fun = function(score, ...) mean(score, na.rm = TRUE),
+    fill = "#58e9a8"
+  ) +
+  scale_x_continuous("Percent correct", limits = c(0, 100)) +
+  labs(y = "Race")
+```
+
+
+---
+# An alternative metric
+
+```{r }
+d %>% 
+  auc(score ~ race) %>% 
+  arrange(race_foc) %>% 
+  mutate(abs = abs(auc)) %>% 
+  select(
+    `Focal Group` = race_foc,
+    `Reference Group` = race_ref,
+    auc
+  ) %>% 
+  semi_join(race_coh_d) %>% 
+  knitr::kable(align = "lcc", digits = 2)
+```
+
+---
+# Gender
+
+--
+
+.pull-left[
+
+First, let's look at counts
+
+```{r }
+stu %>% 
+  count(Gender) %>% 
+  knitr::kable()
+```
+]
+
+--
+
+.pull-right[
+Effect sizes
+
+```{r }
+gender_coh_d <- d %>% 
+  filter(gender != "Fe") %>% 
+  drop_na(gender) %>% 
+  coh_d(score ~ gender) %>% 
+  arrange(gender_foc) %>% 
+  mutate(abs = abs(coh_d)) %>% 
+  distinct(abs, .keep_all = TRUE) %>% 
+  select(
+    `Focal Group` = gender_foc,
+    `Reference Group` = gender_ref,
+    d = coh_d
+  )
+
+knitr::kable(gender_coh_d, align = "lcc", digits = 2)
+```
+
+]
+
+---
+# Densities
+
+```{r }
+d <- d %>% 
+  mutate(
+    gender = ifelse(is.na(gender), "Missing", gender),
+    gender = factor(gender, levels = c("Missing", "Fe", "NB", "M", "F"))
+  ) 
+
+ggplot(d, aes(score, gender)) +
+  stat_density_ridges(
+    quantile_lines = TRUE,
+    quantile_fun = function(score, ...) mean(score, na.rm = TRUE),
+    fill = "#56B4E9"
+  ) +
+  scale_x_continuous("Percent correct", limits = c(0, 100)) +
+  labs(y = "Gender")
+```
+
+---
+# Random selection
+
+```{r }
+d %>% 
+  auc(score ~ gender) %>% 
+  arrange(gender_foc) %>% 
+  select(
+    `Focal Group` = gender_foc,
+    `Reference Group` = gender_ref,
+    auc
+  ) %>% 
+  semi_join(gender_coh_d) %>% 
+  knitr::kable(align = "lcc", digits = 2)
+```
+
+---
+class: inverse-red middle
+# More complex modeling
+
+---
+# Individual change
+
+```{r }
+means <- d %>% 
+  group_by(quiz_number, group_type) %>% 
+  summarize(score = mean(score, na.rm = TRUE))
+
+ggplot(d, aes(quiz_number, score)) +
+  geom_line(
+    aes(group = student_id),
+    size = 0.1,
+    color = "gray30",
+    alpha = 0.5
+  ) +
+  geom_line(
+    aes(color = group_type),
+    data = means,
+    alpha = 0.5
+  ) +
+  geom_point(
+    aes(color = group_type),
+    fill = "white",
+    shape = 21,
+    stroke = 2,
+    data = means
+  ) +
+  colorblindr::scale_color_OkabeIto(name = "Instructional Grouping") +
+  scale_x_continuous("Quiz Number/Week", breaks = 1:10) +
+  labs(y = "Percent correct") +
+  theme(
+    legend.position = "bottom",
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 20)
+  ) 
+```
+
+
+---
+# Process
+
+* First model students' growth only
+
+--
+
+* Then add in instructional group
+
+--
+
+* Compare fit of models
+
+
+--
+
+* Add *race*, compare, add *gender* compare
+
+
+--
+If the fit of the model improves, so does our model accuracy
+
+---
+# Growth vs Instructional groups
+
+```{r }
+d <- d %>% 
+  mutate(weeks = quiz_number - 1)
+
+m0 <- lmer(
+  score ~ weeks + (1 | student_id),
+  data = d,
+  REML = FALSE
+)
+
+m1 <- lmer(
+  score ~ weeks + group_type + (1 | student_id),
+  data = d,
+  REML = FALSE
+)
+as.data.frame(anova(m0, m1)) %>% 
+  knitr::kable()
+```
+
+Lower values indicate better fitting model
+
+
+--
+## Takeaway
+
+Including instructional group *clearly* helps us explain why students get the scores they do
+
+---
+# Pairwise comparisons
+
+```{r }
+emm1 <- emmeans(m1, specs = pairwise ~ group_type)
+
+confint(emm1$contrasts) %>% 
+  select(
+    Contrast = contrast,
+    Estimate = estimate,
+    `Lower Bound` = lower.CL,
+    `Upper Bound` = upper.CL
+  ) %>% 
+  knitr::kable(digits = 2)
+```
+
+---
+# Add in Race
+
+```{r }
+m2 <- lmer(
+  score ~ weeks + group_type + race + (1 | student_id),
+  data = d,
+  REML = FALSE
+)
+as.data.frame(anova(m1, m2)) %>% 
+  knitr::kable()
+```
+
+
+--
+## Takeaway
+
+We are not able to **better** explain why students scored the way they did by including *race*, after already accounting for their instructional group
+
+---
+# Pairwise race comparisons
+
+```{r }
+emm2 <- emmeans(m2, specs = pairwise ~ race)
+
+confint(emm2$contrasts) %>% 
+  select(
+    Contrast = contrast,
+    Estimate = estimate,
+    `Lower Bound` = lower.CL,
+    `Upper Bound` = upper.CL
+  ) %>% 
+  knitr::kable(digits = 2)
+```
+
+
+---
+# Drop race, add gender
+
+Comparison is to instructional group only (while still accounting for individual student growth)
+
+```{r }
+m3 <- lmer(
+  score ~ weeks + group_type + gender + (1 | student_id),
+  data = d,
+  REML = FALSE
+)
+as.data.frame(anova(m1, m3)) %>% 
+  knitr::kable()
+```
+
+--
+## Takeaway
+
+Gender also does not help our explanation beyond what we already know from instructional group
+
+---
+# Pariwise comparisons
+
+Some evidence of a reliable male/female difference
+
+```{r }
+emm3 <- emmeans(m3, specs = pairwise ~ gender)
+
+confint(emm3$contrasts) %>% 
+  select(
+    Contrast = contrast,
+    Estimate = estimate,
+    `Lower Bound` = lower.CL,
+    `Upper Bound` = upper.CL
+  ) %>% 
+  knitr::kable(digits = 2)
+```
+
+
+---
+# Final takeaways
+
+> What groups of students, based on common attributes, are consistently underperforming on their quizzes?
+
+
+--
+* Manual instructional grouping
+
+
+--
+
+* Little evidence that race is an important predictor
+
+--
+
+* Some evidence that Male students score lower than Female, on average
+
+
+---
+# Final takeaways
+
+> Are there any types of groups, e.g., manual groups vs calculated (SimGroup, DivGroup, Random), that you would recommend teachers use or avoid using?
+
+--
+
+* **DivGroup** was consistently the highest performing
+
+
+---
+# Other possible areas to explore
+
+* Could consider collapsing gender in some way
+
+* Could explore interactions
+
+  + It's possible, for example, that we could find greater gender or race differences *within* an instructional grouping
+
+* Probably *should* do a few more robustness checks before making implementation decisions
+
+
+---
+class: inverse-green middle
+
+# Thank you!
+## Questions?
+
+---
+class: inverse-blue middle
+
+# Bonus slides!
+
+---
+# A technical note on percents
+
+* Regularly modeled as a standard continuous outcome
+
+--
+
+* This is sometimes problematic
+
+  + Bounded response
+  
+--
+
+* In this case, we can get away with it without much problem
+
+---
+# Evidence for this claim
+
+```{r }
+ggplot(d, aes(score)) +
+  geom_histogram(
+    fill = "#56B4E9",
+    color = "#56B4E9",
+    alpha = 0.8,
+    bins = 35,
+  ) +
+  scale_x_continuous(limits = c(0, 100))
+```
+
+---
+
+```{r }
+ggplot(d, aes(sample = score)) +
+  stat_qq_line(color = "#56B4E9") +
+  geom_qq(
+    color = "gray40",
+    stroke = 0,
+    alpha = 0.3
+  )
+```
+
+---
+class: inverse-red middle
+
+# Linearity
+
+---
+
+```{r }
+d %>% 
+  group_by(quiz_number) %>% 
+  summarize(mean = mean(score, na.rm = TRUE)) %>% 
+  ggplot(aes(quiz_number, mean)) +
+    geom_point() +
+    geom_smooth(method ="lm") +
+    scale_x_continuous("Quiz Number/Week", breaks = 1:10) +
+    labs(y = "Percent correct")
+```
