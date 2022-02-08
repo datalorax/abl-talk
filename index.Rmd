@@ -25,7 +25,6 @@ knitr::opts_chunk$set(
   echo = FALSE,
   fig.width = 9
 )
-options(knitr.kable.NA = '')
 
 library(lme4)
 library(esvis)
@@ -251,9 +250,35 @@ d %>%
 ```
 
 ---
+# Visually
+
+```{r }
+grid <- expand.grid(x = 1:10, y = 1:10)
+samp <- sample(seq_len(nrow(grid)), nrow(grid) * .41)
+
+grid %>% 
+  rownames_to_column("row_id") %>% 
+  mutate(event = ifelse(row_id %in% samp, "Yes", "No")) %>% 
+  ggplot(aes(x, y)) +
+  geom_tile(aes(fill = event), color = "white", size = 1.4) +
+  scale_fill_manual(
+    "Higher Martian Score?",
+    values = c("#C4D1E8", "#304158")
+  ) +
+  coord_fixed() +
+  theme_void() +
+  theme(
+    legend.position = "bottom",
+    legend.text = element_text(size = 20),
+    legend.title = element_text(size = 25),
+    legend.key.size = unit(1, 'cm'),
+    plot.margin = margin(b = 10)
+  )
+```
+
+---
 # Gender
 
---
 
 .pull-left[
 
@@ -272,6 +297,7 @@ stu %>%
 Effect sizes
 
 ```{r }
+options(knitr.kable.NA = '')
 gender_coh_d <- d %>% 
   filter(gender != "Fe") %>% 
   drop_na(gender) %>% 
@@ -423,6 +449,8 @@ Including instructional group *clearly* helps us explain why students get the sc
 ---
 # Pairwise comparisons
 
+<br>
+
 ```{r }
 emm1 <- emmeans(m1, specs = pairwise ~ group_type)
 
@@ -446,9 +474,10 @@ m2 <- lmer(
   REML = FALSE
 )
 as.data.frame(anova(m1, m2)) %>% 
-  knitr::kable()
+  knitr::kable(digits = 2)
 ```
 
+<br>
 
 --
 ## Takeaway
@@ -484,8 +513,10 @@ m3 <- lmer(
   REML = FALSE
 )
 as.data.frame(anova(m1, m3)) %>% 
-  knitr::kable()
+  knitr::kable(digits = 2)
 ```
+
+<br>
 
 --
 ## Takeaway
